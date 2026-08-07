@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "569054491139",
+    "project_id": "faceauth-6130e",
+    "storage_bucket": "faceauth-6130e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:569054491139:android:a58f153fba2d80f9f15436",
+        "android_client_info": {
+          "package_name": "com.akartis.faceauth"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDHw-46oi7oPsKufj7F8A5_625QFqhoteM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
