@@ -6,7 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.akartis.faceauth.data.AuthRepository
-import com.akartis.faceauth.ui.face.FaceEnrollmentScreen
+import com.akartis.faceauth.face.RegisterFaceScreen
 import com.akartis.faceauth.ui.home.HomeScreen
 import com.akartis.faceauth.ui.login.LoginScreen
 import com.akartis.faceauth.ui.signup.SignupScreen
@@ -39,18 +39,8 @@ fun AppNavigation(
                     navController.navigate(Routes.SIGNUP)
                 },
                 onFaceAuthClick = {
+                    // Placeholder: full Login Face Auth comparison comes in next step
                     navController.navigate(Routes.FACE_ENROLLMENT)
-                }
-            )
-        }
-
-        composable(Routes.FACE_ENROLLMENT) {
-            FaceEnrollmentScreen(
-                onEnrollmentComplete = {
-                    navController.popBackStack()
-                },
-                onBack = {
-                    navController.popBackStack()
                 }
             )
         }
@@ -58,12 +48,25 @@ fun AppNavigation(
         composable(Routes.SIGNUP) {
             SignupScreen(
                 onSignupSuccess = {
-                    navController.navigate(Routes.HOME) {
-                        popUpTo(Routes.LOGIN) { inclusive = true }
+                    // Account created → UID available → enroll face next
+                    navController.navigate(Routes.FACE_ENROLLMENT) {
+                        popUpTo(Routes.SIGNUP) { inclusive = true }
                     }
                 },
                 onNavigateToLogin = {
                     navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Routes.FACE_ENROLLMENT) {
+            RegisterFaceScreen(
+                onRegistrationComplete = {
+                    // Enrollment saved → sign out and land on Login
+                    AuthRepository.logout()
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
             )
         }

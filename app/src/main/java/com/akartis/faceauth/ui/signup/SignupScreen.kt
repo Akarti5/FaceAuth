@@ -62,6 +62,20 @@ fun SignupScreen(
     val focusManager = LocalFocusManager.current
     val scope = rememberCoroutineScope()
 
+    fun submitSignup() {
+        if (isLoading) return
+        scope.launch {
+            attemptSignup(
+                email = email,
+                password = password,
+                confirmPassword = confirmPassword,
+                onError = { errorMessage = it },
+                onLoading = { isLoading = it },
+                onSuccess = onSignupSuccess
+            )
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -74,6 +88,15 @@ fun SignupScreen(
         Text(
             text = stringResource(R.string.signup_title),
             style = MaterialTheme.typography.headlineMedium,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = stringResource(R.string.signup_face_next_hint),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center
         )
 
@@ -168,18 +191,7 @@ fun SignupScreen(
             keyboardActions = KeyboardActions(
                 onDone = {
                     focusManager.clearFocus()
-                    if (!isLoading) {
-                        scope.launch {
-                            attemptSignup(
-                                email = email,
-                                password = password,
-                                confirmPassword = confirmPassword,
-                                onError = { errorMessage = it },
-                                onLoading = { isLoading = it },
-                                onSuccess = onSignupSuccess
-                            )
-                        }
-                    }
+                    submitSignup()
                 }
             ),
             modifier = Modifier.fillMaxWidth()
@@ -198,18 +210,7 @@ fun SignupScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = {
-                scope.launch {
-                    attemptSignup(
-                        email = email,
-                        password = password,
-                        confirmPassword = confirmPassword,
-                        onError = { errorMessage = it },
-                        onLoading = { isLoading = it },
-                        onSuccess = onSignupSuccess
-                    )
-                }
-            },
+            onClick = { submitSignup() },
             enabled = !isLoading,
             modifier = Modifier.fillMaxWidth()
         ) {

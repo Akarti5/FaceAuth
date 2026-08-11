@@ -37,11 +37,16 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 @OptIn(ExperimentalGetImage::class)
 @Composable
 fun FaceCaptureScreen(
     instructionText: String = "Regarde la caméra",
+    /** Increment to unlock the next capture after the parent finished processing. */
+    captureSession: Int = 0,
+    captureEnabled: Boolean = true,
     onFaceCaptured: (Bitmap) -> Unit
 ) {
     val context = LocalContext.current
@@ -81,8 +86,24 @@ fun FaceCaptureScreen(
 
     var faceDetected by remember { mutableStateOf(false) }
     var isProcessing by remember { mutableStateOf(false) }
+    val captureInFlight = remember { AtomicBoolean(false) }
+    val captureEnabledRef = remember { AtomicBoolean(captureEnabled) }
+    val onFaceCapturedRef = remember { AtomicReference(onFaceCaptured) }
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     val mainExecutor = remember { ContextCompat.getMainExecutor(context) }
+
+    LaunchedEffect(captureEnabled) {
+        captureEnabledRef.set(captureEnabled)
+    }
+
+    LaunchedEffect(onFaceCaptured) {
+        onFaceCapturedRef.set(onFaceCaptured)
+    }
+
+    LaunchedEffect(captureSession) {
+        captureInFlight.set(false)
+        isProcessing = false
+    }
 
     DisposableEffect(Unit) {
         onDispose { cameraExecutor.shutdown() }
@@ -105,10 +126,10 @@ fun FaceCaptureScreen(
                         onFaceCropped = { bitmap ->
                             mainExecutor.execute {
                                 faceDetected = true
-                                if (!isProcessing) {
-                                    isProcessing = true
-                                    onFaceCaptured(bitmap)
-                                }
+                                if (!captureEnabledRef.get() || isProcessing) return@execute
+                                if (!captureInFlight.compareAndSet(false, true)) return@execute
+                                isProcessing = true
+                                onFaceCapturedRef.get().invoke(bitmap)
                             }
                         },
                         onNoFace = {
@@ -159,7 +180,13 @@ fun FaceCaptureScreen(
                     modifier = Modifier.padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(if (faceDetected) "Visage détecté ✅" else instructionText)
+                    Text(
+                        if (faceDetected && captureEnabled && !isProcessing) {
+                            "Visage détecté ✅"
+                        } else {
+                            instructionText
+                        }
+                    )
                     if (isProcessing) {
                         Spacer(modifier = Modifier.height(8.dp))
                         CircularProgressIndicator()

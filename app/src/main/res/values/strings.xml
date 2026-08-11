@@ -24,8 +24,12 @@
 
     <!-- Sign Up -->
     <string name="signup_title">Inscription</string>
+    <string name="signup_face_next_hint">Après la création du compte, vous enregistrerez votre visage (5 captures).</string>
     <string name="confirm_password">Confirmer le mot de passe</string>
     <string name="signup_button">Créer un compte</string>
+    <string name="register_face_button">Enregistrer mon visage</string>
+    <string name="face_registered">Visage enregistré ✓</string>
+    <string name="face_registration_required">L\'enregistrement du visage est obligatoire pour créer un compte</string>
     <string name="already_have_account">Déjà un compte ?</string>
     <string name="login_link">Se connecter</string>
 

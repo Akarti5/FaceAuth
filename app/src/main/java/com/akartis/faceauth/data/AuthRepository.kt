@@ -8,6 +8,8 @@ object AuthRepository {
 
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
+    fun getCurrentUserId(): String? = auth.currentUser?.uid
+
     fun getCurrentUserEmail(): String? = auth.currentUser?.email
 
     fun isLoggedIn(): Boolean = auth.currentUser != null
