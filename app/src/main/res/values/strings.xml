@@ -1,3 +1,29 @@
 <resources>
     <string name="app_name">FaceAuth</string>
+
+    <!-- Login -->
+    <string name="login_title">Connexion</string>
+    <string name="email">Email</string>
+    <string name="password">Mot de passe</string>
+    <string name="login_button">Se connecter</string>
+    <string name="no_account">Pas encore de compte ?</string>
+    <string name="signup_link">S\'inscrire</string>
+
+    <!-- Sign Up -->
+    <string name="signup_title">Inscription</string>
+    <string name="confirm_password">Confirmer le mot de passe</string>
+    <string name="signup_button">Créer un compte</string>
+    <string name="already_have_account">Déjà un compte ?</string>
+    <string name="login_link">Se connecter</string>
+
+    <!-- Home -->
+    <string name="connected_message">Vous êtes connecté</string>
+    <string name="logout_button">Se déconnecter</string>
+
+    <!-- Validation -->
+    <string name="error_email_empty">Veuillez saisir votre email</string>
+    <string name="error_email_invalid">Email invalide</string>
+    <string name="error_password_empty">Veuillez saisir votre mot de passe</string>
+    <string name="error_password_short">Le mot de passe doit contenir au moins 6 caractères</string>
+    <string name="error_password_mismatch">Les mots de passe ne correspondent pas</string>
 </resources>
