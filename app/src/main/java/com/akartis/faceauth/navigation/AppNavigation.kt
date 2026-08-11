@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.akartis.faceauth.data.AuthRepository
+import com.akartis.faceauth.ui.face.FaceEnrollmentScreen
 import com.akartis.faceauth.ui.home.HomeScreen
 import com.akartis.faceauth.ui.login.LoginScreen
 import com.akartis.faceauth.ui.signup.SignupScreen
@@ -14,6 +15,7 @@ object Routes {
     const val LOGIN = "login"
     const val SIGNUP = "signup"
     const val HOME = "home"
+    const val FACE_ENROLLMENT = "face_enrollment"
 }
 
 @Composable
@@ -35,6 +37,20 @@ fun AppNavigation(
                 },
                 onNavigateToSignup = {
                     navController.navigate(Routes.SIGNUP)
+                },
+                onFaceAuthClick = {
+                    navController.navigate(Routes.FACE_ENROLLMENT)
+                }
+            )
+        }
+
+        composable(Routes.FACE_ENROLLMENT) {
+            FaceEnrollmentScreen(
+                onEnrollmentComplete = {
+                    navController.popBackStack()
+                },
+                onBack = {
+                    navController.popBackStack()
                 }
             )
         }

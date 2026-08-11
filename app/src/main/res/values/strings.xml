@@ -3,11 +3,24 @@
 
     <!-- Login -->
     <string name="login_title">Connexion</string>
+    <string name="welcome_back">Welcome back</string>
+    <string name="login_subtitle">Login to your account</string>
     <string name="email">Email</string>
-    <string name="password">Mot de passe</string>
-    <string name="login_button">Se connecter</string>
-    <string name="no_account">Pas encore de compte ?</string>
-    <string name="signup_link">S\'inscrire</string>
+    <string name="email_placeholder">Enter your email</string>
+    <string name="password">Password</string>
+    <string name="password_placeholder">Enter your password</string>
+    <string name="remember_me">Remember me</string>
+    <string name="forgot_password">Forgot password?</string>
+    <string name="login_button">Login</string>
+    <string name="or_divider">or</string>
+    <string name="continue_with_prefix">Continue with </string>
+    <string name="face_authentication">Face Authentication</string>
+    <string name="no_account">Don\'t have an account?</string>
+    <string name="signup_link">Sign up</string>
+    <string name="faceauth_logo_cd">FaceAuth logo</string>
+    <string name="face_auth_icon_cd">Face authentication</string>
+    <string name="show_password_cd">Show password</string>
+    <string name="hide_password_cd">Hide password</string>
 
     <!-- Sign Up -->
     <string name="signup_title">Inscription</string>
