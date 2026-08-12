@@ -66,6 +66,9 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-firestore")
 
+    // Android Keystore — stockage sécurisé des credentials (face auth local)
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
     // CameraX
     val cameraxVersion = "1.3.4"
     implementation("androidx.camera:camera-core:$cameraxVersion")

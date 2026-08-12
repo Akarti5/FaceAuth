@@ -80,7 +80,7 @@ import kotlinx.coroutines.launch
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onNavigateToSignup: () -> Unit,
-    onFaceAuthClick: (email: String, password: String) -> Unit = { _, _ -> },
+    onFaceAuthClick: (email: String) -> Unit = {},
     onForgotPasswordClick: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
@@ -94,10 +94,13 @@ fun LoginScreen(
     val scope = rememberCoroutineScope()
     val fieldShape = RoundedCornerShape(12.dp)
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+
     fun submitLogin() {
         if (isLoading) return
         scope.launch {
             attemptLogin(
+                context = context,
                 email = email,
                 password = password,
                 onError = { errorMessage = it },
@@ -381,10 +384,9 @@ fun LoginScreen(
                 val trimmedEmail = email.trim()
                 when {
                     trimmedEmail.isEmpty() -> errorMessage = "Veuillez saisir votre email"
-                    password.isEmpty() -> errorMessage = "Veuillez saisir votre mot de passe pour la connexion par visage"
                     else -> {
                         errorMessage = null
-                        onFaceAuthClick(trimmedEmail, password)
+                        onFaceAuthClick(trimmedEmail)
                     }
                 }
             },
@@ -469,6 +471,7 @@ private fun darkFieldColors() = OutlinedTextFieldDefaults.colors(
 )
 
 private suspend fun attemptLogin(
+    context: android.content.Context,
     email: String,
     password: String,
     onError: (String) -> Unit,
@@ -483,7 +486,10 @@ private suspend fun attemptLogin(
         else -> {
             onLoading(true)
             AuthRepository.login(trimmedEmail, password)
-                .onSuccess { onSuccess() }
+                .onSuccess { 
+                    com.akartis.faceauth.data.EncryptedCredentialStore.save(context, trimmedEmail, password)
+                    onSuccess() 
+                }
                 .onFailure { onError(it.message ?: "Échec de la connexion") }
             onLoading(false)
         }

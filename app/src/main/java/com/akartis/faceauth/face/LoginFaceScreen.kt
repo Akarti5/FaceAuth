@@ -1,6 +1,5 @@
 package com.akartis.faceauth.face
 
-import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +15,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -23,32 +23,38 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.akartis.faceauth.camera.FaceCaptureScreen
-import com.akartis.faceauth.data.AuthRepository
-import com.akartis.faceauth.data.FaceEmbeddingRepository
-import com.akartis.faceauth.ml.EmbeddingMath
-import java.util.concurrent.atomic.AtomicLong
-import kotlin.math.abs
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicLong
+import kotlin.math.abs
+import com.akartis.faceauth.data.FaceEmbeddingRepository
 
-private const val FACE_MATCH_THRESHOLD = 0.65f
 private const val FRONT_YAW_ABS_DEG = 15f
 private const val EYE_OPEN_MIN = 0.35f
 private const val FRONT_STABLE_MS = 1500L
 private const val STEP_COOLDOWN_MS = 800L
+private const val MAX_ATTEMPTS = 3
 
 /**
- * Connexion rapide par visage : 1 seule capture stable face caméra.
- * Compare avec l'embedding Firestore lié à l'email, puis connecte via Firebase Auth.
+ * Login par FaceAuth local :
+ *  - App calcule embedding FaceNet
+ *  - App récupère l'embedding stocké depuis Firestore
+ *  - App calcule la similarité cosinus
+ *  - Si match, récupère le mot de passe dans EncryptedCredentialStore
+ *  - App fait `signInWithEmailAndPassword` (via AuthRepository)
+ *
+ * Après MAX_ATTEMPTS échecs, on revient sur Login pour que l'utilisateur saisisse email/mdp manuellement.
  */
 @Composable
 fun LoginFaceScreen(
     email: String,
-    password: String,
     onLoginSuccess: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -59,6 +65,7 @@ fun LoginFaceScreen(
     var isProcessing by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var failedAttempts by remember { mutableIntStateOf(0) }
 
     val stableSinceMs = remember { AtomicLong(0L) }
     val lastAttemptMs = remember { AtomicLong(0L) }
@@ -69,7 +76,7 @@ fun LoginFaceScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         FaceCaptureScreen(
-            instructionText = "Étape 1/1\nRegardez devant vous",
+            instructionText = "Regardez devant vous",
             captureEnabled = !isProcessing,
             onFaceAnalyzed = { croppedBitmap, headEulerAngleY, leftEyeOpenProbability, rightEyeOpenProbability ->
                 if (isProcessing) return@FaceCaptureScreen
@@ -107,38 +114,45 @@ fun LoginFaceScreen(
                             faceNetHelper.getEmbedding(croppedBitmap)
                         }
 
-                        val (_, storedEmbedding) = FaceEmbeddingRepository
-                            .getFaceEmbeddingByEmail(email)
-                            .getOrElse { throw it }
+                        // 1. Récupérer l'embedding depuis Firestore (par email)
+                        val (uid, storedEmbedding) = FaceEmbeddingRepository.getFaceEmbeddingByEmail(email)
+                            .getOrThrow()
 
-                        val similarity = withContext(Dispatchers.Default) {
-                            EmbeddingMath.cosineSimilarity(
-                                EmbeddingMath.l2Normalize(liveEmbedding),
-                                storedEmbedding
-                            )
+                        // 2. Normalisation et similarité locale
+                        val liveNorm = com.akartis.faceauth.ml.EmbeddingMath.l2Normalize(liveEmbedding)
+                        val storedNorm = com.akartis.faceauth.ml.EmbeddingMath.l2Normalize(storedEmbedding)
+                        val similarity = com.akartis.faceauth.ml.EmbeddingMath.cosineSimilarity(liveNorm, storedNorm)
+
+                        if (similarity < 0.65f) {
+                            throw Exception("Visage non reconnu (sim: $similarity)")
                         }
 
-                        if (similarity < FACE_MATCH_THRESHOLD) {
-                            errorMessage = "Visage non reconnu (score ${"%.2f".format(similarity)})"
-                            isProcessing = false
-                            statusMessage = null
-                            return@launch
+                        statusMessage = "Visage reconnu ✅ Connexion..."
+
+                        // 3. Récupérer le mot de passe depuis le coffre-fort local
+                        val credentials = com.akartis.faceauth.data.EncryptedCredentialStore.load(context)
+                        if (credentials == null || credentials.first != email.trim().lowercase()) {
+                            throw Exception("Identifiants locaux introuvables. Connectez-vous manuellement.")
                         }
 
-                        statusMessage = "Visage reconnu, connexion..."
+                        // 4. Connexion Firebase classique
+                        com.akartis.faceauth.data.AuthRepository.login(credentials.first, credentials.second)
+                            .getOrThrow()
 
-                        AuthRepository.login(email.trim(), password)
-                            .onSuccess { onLoginSuccess() }
-                            .onFailure {
-                                errorMessage = it.message ?: "Échec de la connexion"
-                                isProcessing = false
-                                statusMessage = null
-                            }
+                        onLoginSuccess()
+
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        errorMessage = e.message ?: "Erreur lors de la vérification"
                         isProcessing = false
                         statusMessage = null
+                        failedAttempts += 1
+                        if (failedAttempts >= MAX_ATTEMPTS) {
+                            errorMessage = "$MAX_ATTEMPTS tentatives échouées. Connectez-vous avec votre mot de passe."
+                            onBack()
+                        } else {
+                            val remaining = MAX_ATTEMPTS - failedAttempts
+                            errorMessage = "${e.message ?: "Erreur inconnue"} ($remaining tentative${if (remaining > 1) "s" else ""} restante${if (remaining > 1) "s" else ""})"
+                        }
                     }
                 }
             }
@@ -149,10 +163,15 @@ fun LoginFaceScreen(
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
         ) {
             statusMessage?.let {
-                Text(text = it, textAlign = TextAlign.Center)
+                Text(
+                    text = it,
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Medium
+                )
                 Spacer(modifier = Modifier.height(8.dp))
             }
             errorMessage?.let {
@@ -165,6 +184,17 @@ fun LoginFaceScreen(
             if (isProcessing) {
                 Spacer(modifier = Modifier.height(12.dp))
                 CircularProgressIndicator()
+            }
+            // Indicateur tentatives (hors erreur, quand la caméra est active)
+            if (!isProcessing && errorMessage == null && failedAttempts > 0) {
+                Spacer(modifier = Modifier.height(4.dp))
+                val remaining = MAX_ATTEMPTS - failedAttempts
+                Text(
+                    text = "Tentatives restantes : $remaining / $MAX_ATTEMPTS",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center
+                )
             }
             Spacer(modifier = Modifier.height(8.dp))
             TextButton(onClick = onBack, enabled = !isProcessing) {

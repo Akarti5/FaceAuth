@@ -62,10 +62,13 @@ fun SignupScreen(
     val focusManager = LocalFocusManager.current
     val scope = rememberCoroutineScope()
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+
     fun submitSignup() {
         if (isLoading) return
         scope.launch {
             attemptSignup(
+                context = context,
                 email = email,
                 password = password,
                 confirmPassword = confirmPassword,
@@ -234,6 +237,7 @@ fun SignupScreen(
 }
 
 private suspend fun attemptSignup(
+    context: android.content.Context,
     email: String,
     password: String,
     confirmPassword: String,
@@ -251,7 +255,10 @@ private suspend fun attemptSignup(
         else -> {
             onLoading(true)
             AuthRepository.signup(trimmedEmail, password)
-                .onSuccess { onSuccess() }
+                .onSuccess { 
+                    com.akartis.faceauth.data.EncryptedCredentialStore.save(context, trimmedEmail, password)
+                    onSuccess() 
+                }
                 .onFailure { onError(it.message ?: "Échec de l'inscription") }
             onLoading(false)
         }

@@ -40,7 +40,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
-@OptIn(ExperimentalGetImage::class)
+@androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
 @Composable
 fun FaceCaptureScreen(
     instructionText: String = "Regarde la caméra",

@@ -21,7 +21,6 @@ object Routes {
 }
 
 private const val KEY_FACE_AUTH_EMAIL = "face_auth_email"
-private const val KEY_FACE_AUTH_PASSWORD = "face_auth_password"
 
 @Composable
 fun AppNavigation(
@@ -43,10 +42,9 @@ fun AppNavigation(
                 onNavigateToSignup = {
                     navController.navigate(Routes.SIGNUP)
                 },
-                onFaceAuthClick = { email, password ->
+                onFaceAuthClick = { email ->
                     navController.currentBackStackEntry?.savedStateHandle?.apply {
                         set(KEY_FACE_AUTH_EMAIL, email)
-                        set(KEY_FACE_AUTH_PASSWORD, password)
                     }
                     navController.navigate(Routes.FACE_LOGIN)
                 }
@@ -82,14 +80,9 @@ fun AppNavigation(
                 ?.savedStateHandle
                 ?.get<String>(KEY_FACE_AUTH_EMAIL)
                 .orEmpty()
-            val password = navController.previousBackStackEntry
-                ?.savedStateHandle
-                ?.get<String>(KEY_FACE_AUTH_PASSWORD)
-                .orEmpty()
 
             LoginFaceScreen(
                 email = email,
-                password = password,
                 onLoginSuccess = {
                     navController.navigate(Routes.HOME) {
                         popUpTo(Routes.LOGIN) { inclusive = true }

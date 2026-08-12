@@ -24,6 +24,7 @@ import com.akartis.faceauth.ui.theme.FaceAuthTheme
 fun HomeScreen(
     onLogout: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -40,7 +41,10 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = onLogout,
+            onClick = {
+                com.akartis.faceauth.data.EncryptedCredentialStore.clear(context)
+                onLogout()
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(stringResource(R.string.logout_button))
