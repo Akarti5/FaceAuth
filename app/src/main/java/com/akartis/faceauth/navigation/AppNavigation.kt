@@ -12,12 +12,15 @@ import com.akartis.faceauth.ui.home.HomeScreen
 import com.akartis.faceauth.ui.login.LoginScreen
 import com.akartis.faceauth.ui.signup.SignupScreen
 
+import com.akartis.faceauth.ui.face.EnrollmentSuccessScreen
+
 object Routes {
     const val LOGIN = "login"
     const val SIGNUP = "signup"
     const val HOME = "home"
     const val FACE_ENROLLMENT = "face_enrollment"
     const val FACE_LOGIN = "face_login"
+    const val ENROLLMENT_SUCCESS = "enrollment_success"
 }
 
 private const val KEY_FACE_AUTH_EMAIL = "face_auth_email"
@@ -65,11 +68,19 @@ fun AppNavigation(
         }
 
         composable(Routes.FACE_ENROLLMENT) {
-            val context = androidx.compose.ui.platform.LocalContext.current
             RegisterFaceScreen(
                 onRegistrationComplete = {
-                    android.widget.Toast.makeText(context, "Enregistrement réussi !", android.widget.Toast.LENGTH_LONG).show()
                     AuthRepository.logout()
+                    navController.navigate(Routes.ENROLLMENT_SUCCESS) {
+                        popUpTo(Routes.FACE_ENROLLMENT) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Routes.ENROLLMENT_SUCCESS) {
+            EnrollmentSuccessScreen(
+                onContinueToLogin = {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(0) { inclusive = true }
                     }

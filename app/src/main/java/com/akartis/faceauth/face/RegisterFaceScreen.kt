@@ -93,15 +93,12 @@ fun RegisterFaceScreen(
     }
 
     fun stepInstruction(index: Int): String = when (index) {
-        0 -> "Regardez devant vous"
-        1 -> "Tournez lentement à gauche"
-        2 -> "Tournez lentement à droite"
-        3 -> "Clignez des yeux"
-        else -> "Regardez devant vous"
+        0 -> "Regardez devant vous 🎯"
+        1 -> "Tournez à droite ➡"
+        2 -> "Tournez à gauche ⬅"
+        3 -> "Clignez des yeux 👁"
+        else -> "Regardez devant vous 🎯"
     }
-
-    val stepProgress = "Étape ${stepIndex + 1}/$REQUIRED_STEPS"
-    val instructionText = "${stepProgress}\n${stepInstruction(stepIndex)}"
 
     fun retryFirestoreSave() {
         if (embeddings.size < REQUIRED_STEPS || firestoreSaving || enrollmentUid == null) return
@@ -184,10 +181,12 @@ fun RegisterFaceScreen(
             else -> {
                 FaceCaptureScreen(
                     instructionText = if (embeddingProcessing) {
-                        "${instructionText}\nTraitement en cours..."
+                        "Analyse du visage..."
                     } else {
-                        instructionText
+                        stepInstruction(stepIndex)
                     },
+                    currentStep = stepIndex,
+                    totalSteps = REQUIRED_STEPS,
                     captureEnabled = !embeddingProcessing && !firestoreSaving,
                     onFaceAnalyzed = { croppedBitmap, headEulerAngleY, leftEyeOpenProbability, rightEyeOpenProbability ->
                         if (embeddingProcessing || firestoreSaving) return@FaceCaptureScreen
