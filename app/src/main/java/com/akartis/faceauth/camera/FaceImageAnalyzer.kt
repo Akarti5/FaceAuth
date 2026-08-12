@@ -15,14 +15,20 @@ import com.google.mlkit.vision.face.FaceDetectorOptions
 import java.io.ByteArrayOutputStream
 
 class FaceImageAnalyzer(
-    private val onFaceCropped: (Bitmap) -> Unit,
+    private val onFaceAnalyzed: (
+        croppedBitmap: Bitmap,
+        headEulerAngleY: Float?,
+        leftEyeOpenProbability: Float?,
+        rightEyeOpenProbability: Float?
+    ) -> Unit,
     private val onNoFace: () -> Unit
 ) {
 
     private val detectorOptions = FaceDetectorOptions.Builder()
         .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
         .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_NONE)
-        .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_NONE)
+        // We need eye open probabilities for blink detection.
+        .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
         .build()
 
     private val detector = FaceDetection.getClient(detectorOptions)
@@ -47,7 +53,12 @@ class FaceImageAnalyzer(
                         val fullBitmap = imageProxyToBitmap(imageProxy, rotationDegrees)
                         val cropped = cropFace(fullBitmap, face)
                         if (cropped != null) {
-                            onFaceCropped(cropped)
+                            onFaceAnalyzed(
+                                cropped,
+                                face.headEulerAngleY,
+                                face.leftEyeOpenProbability,
+                                face.rightEyeOpenProbability
+                            )
                         } else {
                             onNoFace()
                         }

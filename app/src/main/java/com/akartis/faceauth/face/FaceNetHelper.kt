@@ -7,7 +7,6 @@ import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.channels.FileChannel
-import kotlin.math.sqrt
 
 class FaceNetHelper(context: Context) {
 
@@ -77,28 +76,10 @@ class FaceNetHelper(context: Context) {
         }
 
         interpreter.run(inputBuffer, output)
-
-        // Normalisation L2 de l'embedding
-        return normalizeEmbedding(output[0])
-    }
-
-    private fun normalizeEmbedding(embedding: FloatArray): FloatArray {
-
-        var sum = 0f
-
-        for (value in embedding) {
-            sum += value * value
-        }
-
-        val norm = sqrt(sum)
-
-        if (norm == 0f) {
-            return embedding
-        }
-
-        return FloatArray(embedding.size) { index ->
-            embedding[index] / norm
-        }
+        // IMPORTANT:
+        // On renvoie l'embedding brut. La normalisation L2 doit être faite après
+        // la moyenne des embeddings dans le workflow d'enrôlement.
+        return output[0]
     }
 
     private fun loadModelFile(

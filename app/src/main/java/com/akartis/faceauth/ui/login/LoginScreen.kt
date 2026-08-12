@@ -80,7 +80,7 @@ import kotlinx.coroutines.launch
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onNavigateToSignup: () -> Unit,
-    onFaceAuthClick: () -> Unit = {},
+    onFaceAuthClick: (email: String, password: String) -> Unit = { _, _ -> },
     onForgotPasswordClick: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
@@ -377,7 +377,17 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         OutlinedButton(
-            onClick = onFaceAuthClick,
+            onClick = {
+                val trimmedEmail = email.trim()
+                when {
+                    trimmedEmail.isEmpty() -> errorMessage = "Veuillez saisir votre email"
+                    password.isEmpty() -> errorMessage = "Veuillez saisir votre mot de passe pour la connexion par visage"
+                    else -> {
+                        errorMessage = null
+                        onFaceAuthClick(trimmedEmail, password)
+                    }
+                }
+            },
             shape = RoundedCornerShape(16.dp),
             border = BorderStroke(1.dp, FaceAuthGreen),
             colors = ButtonDefaults.outlinedButtonColors(

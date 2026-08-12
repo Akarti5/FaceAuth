@@ -42,7 +42,6 @@ object FaceEmbeddingRepository {
             .await()
     }
 
-    /** Prepared for the next Login Face Auth step. */
     suspend fun getFaceEmbedding(uid: String): Result<FloatArray> = runCatching {
         val snapshot = db.collection(USERS)
             .document(uid)
@@ -53,18 +52,41 @@ object FaceEmbeddingRepository {
             error("Aucun embedding facial trouvé pour cet utilisateur")
         }
 
-        @Suppress("UNCHECKED_CAST")
-        val values = snapshot.get(FIELD_EMBEDDING) as? List<Number>
+        parseEmbedding(snapshot.get(FIELD_EMBEDDING))
+    }
+
+    suspend fun getFaceEmbeddingByEmail(email: String): Result<Pair<String, FloatArray>> = runCatching {
+        val trimmed = email.trim()
+        require(trimmed.isNotEmpty()) { "Email requis" }
+
+        val snapshot = db.collection(USERS)
+            .whereEqualTo(FIELD_EMAIL, trimmed)
+            .limit(1)
+            .get()
+            .await()
+
+        if (snapshot.isEmpty) {
+            error("Aucun visage enregistré pour cet email")
+        }
+
+        val doc = snapshot.documents.first()
+        val embedding = parseEmbedding(doc.get(FIELD_EMBEDDING))
+        doc.id to embedding
+    }
+
+    suspend fun hasFaceEmbedding(uid: String): Boolean {
+        return getFaceEmbedding(uid).isSuccess
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun parseEmbedding(raw: Any?): FloatArray {
+        val values = raw as? List<Number>
             ?: error("Embedding facial manquant ou invalide")
 
         require(values.size == EMBEDDING_SIZE) {
             "Embedding invalide: attendu $EMBEDDING_SIZE, reçu ${values.size}"
         }
 
-        FloatArray(values.size) { values[it].toFloat() }
-    }
-
-    suspend fun hasFaceEmbedding(uid: String): Boolean {
-        return getFaceEmbedding(uid).isSuccess
+        return FloatArray(values.size) { values[it].toFloat() }
     }
 }

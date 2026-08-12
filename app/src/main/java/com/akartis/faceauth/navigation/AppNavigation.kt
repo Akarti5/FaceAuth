@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.akartis.faceauth.data.AuthRepository
+import com.akartis.faceauth.face.LoginFaceScreen
 import com.akartis.faceauth.face.RegisterFaceScreen
 import com.akartis.faceauth.ui.home.HomeScreen
 import com.akartis.faceauth.ui.login.LoginScreen
@@ -16,7 +17,11 @@ object Routes {
     const val SIGNUP = "signup"
     const val HOME = "home"
     const val FACE_ENROLLMENT = "face_enrollment"
+    const val FACE_LOGIN = "face_login"
 }
+
+private const val KEY_FACE_AUTH_EMAIL = "face_auth_email"
+private const val KEY_FACE_AUTH_PASSWORD = "face_auth_password"
 
 @Composable
 fun AppNavigation(
@@ -38,9 +43,12 @@ fun AppNavigation(
                 onNavigateToSignup = {
                     navController.navigate(Routes.SIGNUP)
                 },
-                onFaceAuthClick = {
-                    // Placeholder: full Login Face Auth comparison comes in next step
-                    navController.navigate(Routes.FACE_ENROLLMENT)
+                onFaceAuthClick = { email, password ->
+                    navController.currentBackStackEntry?.savedStateHandle?.apply {
+                        set(KEY_FACE_AUTH_EMAIL, email)
+                        set(KEY_FACE_AUTH_PASSWORD, password)
+                    }
+                    navController.navigate(Routes.FACE_LOGIN)
                 }
             )
         }
@@ -48,7 +56,6 @@ fun AppNavigation(
         composable(Routes.SIGNUP) {
             SignupScreen(
                 onSignupSuccess = {
-                    // Account created → UID available → enroll face next
                     navController.navigate(Routes.FACE_ENROLLMENT) {
                         popUpTo(Routes.SIGNUP) { inclusive = true }
                     }
@@ -62,12 +69,33 @@ fun AppNavigation(
         composable(Routes.FACE_ENROLLMENT) {
             RegisterFaceScreen(
                 onRegistrationComplete = {
-                    // Enrollment saved → sign out and land on Login
                     AuthRepository.logout()
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        composable(Routes.FACE_LOGIN) {
+            val email = navController.previousBackStackEntry
+                ?.savedStateHandle
+                ?.get<String>(KEY_FACE_AUTH_EMAIL)
+                .orEmpty()
+            val password = navController.previousBackStackEntry
+                ?.savedStateHandle
+                ?.get<String>(KEY_FACE_AUTH_PASSWORD)
+                .orEmpty()
+
+            LoginFaceScreen(
+                email = email,
+                password = password,
+                onLoginSuccess = {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.LOGIN) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() }
             )
         }
 
