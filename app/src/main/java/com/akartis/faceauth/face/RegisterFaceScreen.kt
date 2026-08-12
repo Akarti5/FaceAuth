@@ -288,6 +288,8 @@ fun RegisterFaceScreen(
 
                                 embeddings.add(embedding)
 
+                                playStepSuccessSound(context)
+
                                 if (stepToCapture >= REQUIRED_STEPS - 1) {
                                     firestoreSaving = true
                                     saveFinalEmbedding(
@@ -404,5 +406,15 @@ private suspend fun saveFinalEmbedding(
     } catch (e: Exception) {
         e.printStackTrace()
         onError(e.message ?: "Échec de la sauvegarde Firestore")
+    }
+}
+
+private fun playStepSuccessSound(context: android.content.Context) {
+    try {
+        val mediaPlayer = android.media.MediaPlayer.create(context, com.akartis.faceauth.R.raw.step_success)
+        mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+        mediaPlayer?.start()
+    } catch (e: Exception) {
+        e.printStackTrace()
     }
 }
