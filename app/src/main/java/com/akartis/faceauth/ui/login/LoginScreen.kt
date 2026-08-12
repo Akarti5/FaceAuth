@@ -382,12 +382,12 @@ fun LoginScreen(
         OutlinedButton(
             onClick = {
                 val trimmedEmail = email.trim()
-                when {
-                    trimmedEmail.isEmpty() -> errorMessage = "Veuillez saisir votre email"
-                    else -> {
-                        errorMessage = null
-                        onFaceAuthClick(trimmedEmail)
-                    }
+                val hasLocalCreds = com.akartis.faceauth.data.EncryptedCredentialStore.hasCredentials(context)
+                if (trimmedEmail.isEmpty() && !hasLocalCreds) {
+                    errorMessage = "Veuillez saisir votre email"
+                } else {
+                    errorMessage = null
+                    onFaceAuthClick(trimmedEmail)
                 }
             },
             shape = RoundedCornerShape(16.dp),

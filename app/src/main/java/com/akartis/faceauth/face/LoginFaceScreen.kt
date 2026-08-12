@@ -59,6 +59,10 @@ fun LoginFaceScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    // On utilise l'email stocké s'il existe, sinon on prend celui passé en paramètre
+    val localEmail = remember { com.akartis.faceauth.data.EncryptedCredentialStore.load(context)?.first }
+    val effectiveEmail = localEmail ?: email
+    
     val scope = rememberCoroutineScope()
     val faceNetHelper = remember { FaceNetHelper(context) }
 
@@ -114,8 +118,12 @@ fun LoginFaceScreen(
                             faceNetHelper.getEmbedding(croppedBitmap)
                         }
 
+                        if (effectiveEmail.isBlank()) {
+                            throw Exception("Email requis. Veuillez vous connecter manuellement une première fois.")
+                        }
+
                         // 1. Récupérer l'embedding depuis Firestore (par email)
-                        val (uid, storedEmbedding) = FaceEmbeddingRepository.getFaceEmbeddingByEmail(email)
+                        val (uid, storedEmbedding) = FaceEmbeddingRepository.getFaceEmbeddingByEmail(effectiveEmail)
                             .getOrThrow()
 
                         // 2. Normalisation et similarité locale
@@ -131,7 +139,7 @@ fun LoginFaceScreen(
 
                         // 3. Récupérer le mot de passe depuis le coffre-fort local
                         val credentials = com.akartis.faceauth.data.EncryptedCredentialStore.load(context)
-                        if (credentials == null || credentials.first != email.trim().lowercase()) {
+                        if (credentials == null || credentials.first != effectiveEmail.trim().lowercase()) {
                             throw Exception("Identifiants locaux introuvables. Connectez-vous manuellement.")
                         }
 

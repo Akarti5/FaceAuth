@@ -65,8 +65,10 @@ fun AppNavigation(
         }
 
         composable(Routes.FACE_ENROLLMENT) {
+            val context = androidx.compose.ui.platform.LocalContext.current
             RegisterFaceScreen(
                 onRegistrationComplete = {
+                    android.widget.Toast.makeText(context, "Enregistrement réussi !", android.widget.Toast.LENGTH_LONG).show()
                     AuthRepository.logout()
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(0) { inclusive = true }
