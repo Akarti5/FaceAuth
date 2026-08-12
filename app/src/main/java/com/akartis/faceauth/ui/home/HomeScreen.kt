@@ -42,7 +42,6 @@ fun HomeScreen(
 
         Button(
             onClick = {
-                com.akartis.faceauth.data.EncryptedCredentialStore.clear(context)
                 onLogout()
             },
             modifier = Modifier.fillMaxWidth()

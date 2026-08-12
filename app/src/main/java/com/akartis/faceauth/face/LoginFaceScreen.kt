@@ -61,7 +61,7 @@ fun LoginFaceScreen(
     val context = LocalContext.current
     // On utilise l'email stocké s'il existe, sinon on prend celui passé en paramètre
     val localEmail = remember { com.akartis.faceauth.data.EncryptedCredentialStore.load(context)?.first }
-    val effectiveEmail = localEmail ?: email
+    val effectiveEmail = if (email.isNotBlank()) email else (localEmail ?: "")
     
     val scope = rememberCoroutineScope()
     val faceNetHelper = remember { FaceNetHelper(context) }

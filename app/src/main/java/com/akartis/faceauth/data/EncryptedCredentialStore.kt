@@ -21,26 +21,29 @@ object EncryptedCredentialStore {
     private const val KEY_EMAIL  = "credential_email"
     private const val KEY_PASS   = "credential_password"
 
-    /**
-     * Retourne les SharedPreferences chiffrées.
-     * La MasterKey est générée ou récupérée depuis le Keystore hardware.
-     */
-    private fun getPrefs(context: Context) = EncryptedSharedPreferences.create(
-        context,
-        FILE_NAME,
-        MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build(),
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+    @Volatile
+    private var prefsInstance: android.content.SharedPreferences? = null
+
+    private fun getPrefs(context: Context): android.content.SharedPreferences {
+        return prefsInstance ?: synchronized(this) {
+            prefsInstance ?: EncryptedSharedPreferences.create(
+                context.applicationContext,
+                FILE_NAME,
+                MasterKey.Builder(context.applicationContext)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build(),
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            ).also { prefsInstance = it }
+        }
+    }
 
     /** Sauvegarde email + mot de passe de façon chiffrée. */
     fun save(context: Context, email: String, password: String) {
         getPrefs(context).edit()
             .putString(KEY_EMAIL, email.trim().lowercase())
             .putString(KEY_PASS, password)
-            .apply()
+            .commit()
     }
 
     /**
@@ -51,15 +54,15 @@ object EncryptedCredentialStore {
         val prefs  = getPrefs(context)
         val email  = prefs.getString(KEY_EMAIL, null)
         val pass   = prefs.getString(KEY_PASS, null)
-        return if (email != null && pass != null) email to pass else null
+        return if (!email.isNullOrBlank() && !pass.isNullOrBlank()) email to pass else null
     }
 
-    /** Supprime les credentials (à appeler au logout). */
+    /** Supprime les credentials. */
     fun clear(context: Context) {
         getPrefs(context).edit()
             .remove(KEY_EMAIL)
             .remove(KEY_PASS)
-            .apply()
+            .commit()
     }
 
     /** Indique si des credentials sont présents. */
