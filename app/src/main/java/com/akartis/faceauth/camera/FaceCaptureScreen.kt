@@ -62,7 +62,10 @@ fun FaceCaptureScreen(
     currentStep: Int = 0,
     totalSteps: Int = 5,
     captureEnabled: Boolean = true,
-    onFaceAnalyzed: (croppedBitmap: Bitmap, headEulerAngleY: Float?, leftEyeOpenProbability: Float?, rightEyeOpenProbability: Float?) -> Unit
+    onFaceAnalyzed: (croppedBitmap: Bitmap, headEulerAngleY: Float?, leftEyeOpenProbability: Float?, rightEyeOpenProbability: Float?) -> Unit,
+    modifier: Modifier = Modifier,
+    showHeader: Boolean = true,
+    showSegmentBar: Boolean = true
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -118,7 +121,7 @@ fun FaceCaptureScreen(
         onDispose { cameraExecutor.shutdown() }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize()) {
         // 1. Aprem de la caméra
         AndroidView(
             factory = { ctx ->
@@ -186,40 +189,42 @@ fun FaceCaptureScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        // 2. En-tête : Titre + Consigne (1/5 à 5/5 avec flèches)
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(top = 28.dp, start = 20.dp, end = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Enregistrement du visage",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                ),
-                color = Color.White,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = Color.Black.copy(alpha = 0.55f)
+        if (showHeader) {
+            // 2. En-tête : Titre + Consigne (1/5 à 5/5 avec flèches)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(top = 28.dp, start = 20.dp, end = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "${currentStep + 1}/$totalSteps • $instructionText",
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White,
-                        fontSize = 15.sp
+                    text = "Enregistrement du visage",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
                     ),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
+                    color = Color.White,
+                    textAlign = TextAlign.Center
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = Color.Black.copy(alpha = 0.55f)
+                ) {
+                    Text(
+                        text = "${currentStep + 1}/$totalSteps • $instructionText",
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White,
+                            fontSize = 15.sp
+                        ),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
+                    )
+                }
             }
         }
 
@@ -228,30 +233,32 @@ fun FaceCaptureScreen(
             modifier = Modifier.align(Alignment.Center)
         )
 
-        // 4. Barre de progression horizontale à 5 segments en bas
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(horizontal = 32.dp, vertical = 36.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            if (faceDetected && captureEnabled) {
-                Text(
-                    text = "Visage détecté ✅",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = FaceAuthGreen,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    modifier = Modifier.padding(bottom = 12.dp)
+        if (showSegmentBar) {
+            // 4. Barre de progression horizontale à 5 segments en bas
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(horizontal = 32.dp, vertical = 36.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (faceDetected && captureEnabled) {
+                    Text(
+                        text = "Visage détecté ✅",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = FaceAuthGreen,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                }
+
+                SegmentedProgressBar(
+                    currentStep = currentStep,
+                    totalSteps = totalSteps
                 )
             }
-
-            SegmentedProgressBar(
-                currentStep = currentStep,
-                totalSteps = totalSteps
-            )
         }
     }
 }

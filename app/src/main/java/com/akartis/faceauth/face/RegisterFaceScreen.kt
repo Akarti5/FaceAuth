@@ -179,21 +179,21 @@ fun RegisterFaceScreen(
             }
 
             else -> {
-                FaceCaptureScreen(
+                EnrollmentCircularLayout(
                     instructionText = if (embeddingProcessing) {
                         "Analyse du visage..."
                     } else {
                         stepInstruction(stepIndex)
                     },
-                    currentStep = stepIndex,
-                    totalSteps = REQUIRED_STEPS,
+                    stepIndex = stepIndex,
+                    progress = (embeddings.size.toFloat() / REQUIRED_STEPS.toFloat()).coerceIn(0f,1f),
                     captureEnabled = !embeddingProcessing && !firestoreSaving,
                     onFaceAnalyzed = { croppedBitmap, headEulerAngleY, leftEyeOpenProbability, rightEyeOpenProbability ->
-                        if (embeddingProcessing || firestoreSaving) return@FaceCaptureScreen
-                        if (embeddings.size >= REQUIRED_STEPS) return@FaceCaptureScreen
+                        if (embeddingProcessing || firestoreSaving) return@EnrollmentCircularLayout
+                        if (embeddings.size >= REQUIRED_STEPS) return@EnrollmentCircularLayout
 
                         val now = System.currentTimeMillis()
-                        if (now - lastCaptureMs.get() < STEP_COOLDOWN_MS) return@FaceCaptureScreen
+                        if (now - lastCaptureMs.get() < STEP_COOLDOWN_MS) return@EnrollmentCircularLayout
 
                         // Eye probabilities can be null depending on ML Kit config.
                         val eyesOpen = when {
@@ -271,7 +271,7 @@ fun RegisterFaceScreen(
                             }
                         }
 
-                        if (!shouldCapture) return@FaceCaptureScreen
+                        if (!shouldCapture) return@EnrollmentCircularLayout
 
                         // Lock until FaceNet finishes to prevent multi-capture spam.
                         lastCaptureMs.set(now)
