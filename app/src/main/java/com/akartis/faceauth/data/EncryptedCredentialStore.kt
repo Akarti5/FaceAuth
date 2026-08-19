@@ -1,6 +1,7 @@
 package com.akartis.faceauth.data
 
 import android.content.Context
+import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 
@@ -26,15 +27,33 @@ object EncryptedCredentialStore {
 
     private fun getPrefs(context: Context): android.content.SharedPreferences {
         return prefsInstance ?: synchronized(this) {
-            prefsInstance ?: EncryptedSharedPreferences.create(
-                context.applicationContext,
-                FILE_NAME,
-                MasterKey.Builder(context.applicationContext)
-                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                    .build(),
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            ).also { prefsInstance = it }
+            prefsInstance ?: try {
+                EncryptedSharedPreferences.create(
+                    context.applicationContext,
+                    FILE_NAME,
+                    MasterKey.Builder(context.applicationContext)
+                        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                        .build(),
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+                ).also { prefsInstance = it }
+            } catch (e: Exception) {
+                Log.w("EncryptedCredentialStore", "Encrypted prefs init failed — wiping and recreating", e)
+                try {
+                    context.deleteSharedPreferences(FILE_NAME)
+                } catch (ex: Exception) {
+                    Log.w("EncryptedCredentialStore", "Failed to delete prefs file", ex)
+                }
+                EncryptedSharedPreferences.create(
+                    context.applicationContext,
+                    FILE_NAME,
+                    MasterKey.Builder(context.applicationContext)
+                        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                        .build(),
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+                ).also { prefsInstance = it }
+            }
         }
     }
 
